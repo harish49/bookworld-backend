@@ -8,13 +8,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.client.RestTemplate;
 
 import com.project.bookworld.dto.APIResponse;
+import com.project.bookworld.dto.GoogleAPIResponse;
 import com.project.bookworld.entities.Book;
+import com.project.bookworld.repositories.BookRepository;
 import com.project.bookworld.utils.BookUtils;
 
 @Service
@@ -22,22 +23,28 @@ public class BookService {
 
   private static final Logger logger = LoggerFactory.getLogger(BookService.class);
   @Autowired private Environment env;
+  @Autowired BookRepository bookRepository;
 
   public APIResponse getBooksFromGoogle(@PathVariable("id") String id) {
     logger.info("Started to get books from google API");
-    ResponseEntity<String> googleResponse = null;
+    GoogleAPIResponse googleResponse = null;
     List<Book> books = null;
     APIResponse response = new APIResponse();
     try {
       RestTemplate restTemplate = new RestTemplate();
       String URL = env.getProperty("bookSearchUrl") + id;
-      googleResponse = restTemplate.getForEntity(URL, String.class);
+      googleResponse = restTemplate.getForEntity(URL, GoogleAPIResponse.class).getBody();
       books = BookUtils.parseJson(googleResponse);
-      response.setStatusCode(HttpStatus.OK).setResponseData(books);
+      response.setStatusCode(HttpStatus.OK.value()).setResponseData(books);
       logger.info("Sucessfully fetched the books from google API");
+      System.out.println(googleResponse);
+      return response;
+
     } catch (Exception e) {
       logger.error("Exception in getBooksFromGoogle()");
-      response.setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR).setError("Could not hit google API");
+      response
+          .setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR.value())
+          .setError("Could not hit google API");
       e.printStackTrace();
     }
     return response;
@@ -48,48 +55,45 @@ public class BookService {
     Optional<Book> book = null;
     APIResponse response = new APIResponse();
     try {
-      book =
-          BookUtils.getDefaultBooks()
-              .stream()
-              .filter(singleBook -> singleBook.getBookId().equalsIgnoreCase(bookId))
-              .findFirst();
+      book = bookRepository.findById(bookId);
     } catch (Exception e) {
       logger.error("Exception in getBook()");
       response
           .setError("Exception in fetching book")
-          .setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR);
+          .setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR.value());
       e.printStackTrace();
     }
     if (book.isPresent()) {
       logger.info("Fetching the book " + bookId);
-      response.setResponseData(book).setStatusCode(HttpStatus.OK);
+      response.setResponseData(book).setStatusCode(HttpStatus.OK.value());
     } else {
       logger.info("Book is not available in database " + bookId);
-      response.setError("Book is not available").setStatusCode(HttpStatus.NO_CONTENT);
+      response.setError("Book is not available").setStatusCode(HttpStatus.NO_CONTENT.value());
     }
     return response;
   }
 
   public APIResponse getDefaultBooks() {
-    Optional<List<Book>> books = null;
+    Optional<List<Book>> books = Optional.ofNullable(null);
     APIResponse response = new APIResponse();
     logger.info("Getting default books from database");
     try {
-      Thread.sleep(500);
-      books = Optional.of(BookUtils.getDefaultBooks());
+      books = Optional.ofNullable(bookRepository.findAll());
+      bookRepository.saveAll(books.get());
+      System.out.println(books.get());
     } catch (Exception e) {
       logger.error("Exception in getDefaultBooks()");
       e.printStackTrace();
       response
           .setError("Exception in fetching the books from database")
-          .setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR);
+          .setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR.value());
     }
     if (books.isPresent()) {
       logger.info("Getting all books from database");
-      response.setStatusCode(HttpStatus.OK).setResponseData(books.get());
+      response.setStatusCode(HttpStatus.OK.value()).setResponseData(books.get());
     } else {
       logger.info("No books found in database");
-      response.setStatusCode(HttpStatus.NO_CONTENT).setResponseData(books);
+      response.setStatusCode(HttpStatus.NO_CONTENT.value()).setResponseData(books);
     }
     return response;
   }

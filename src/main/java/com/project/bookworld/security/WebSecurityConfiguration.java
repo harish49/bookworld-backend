@@ -42,6 +42,8 @@ public class WebSecurityConfiguration extends WebSecurityConfigurerAdapter {
           .authorizeRequests()
           .antMatchers("/books/**")
           .permitAll()
+          .antMatchers("/users/**")
+          .permitAll()
           .antMatchers("/jwt/token")
           .permitAll()
           .anyRequest()

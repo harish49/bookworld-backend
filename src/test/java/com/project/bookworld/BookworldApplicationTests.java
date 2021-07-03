@@ -18,7 +18,6 @@ import com.project.bookworld.entities.Users;
 import com.project.bookworld.repositories.BookRepository;
 import com.project.bookworld.repositories.UsersAccountRepository;
 import com.project.bookworld.repositories.UsersRepository;
-import com.project.bookworld.utils.BookUtils;
 
 @ExtendWith(SpringExtension.class)
 @TestInstance(Lifecycle.PER_CLASS)
@@ -28,14 +27,13 @@ class BookworldApplicationTests {
   @Autowired BookRepository bookrepo;
   @Autowired UsersRepository usersrepo;
   @Autowired UsersAccountRepository userAccountrepo;
-
   List<Book> books = null;
   List<Users> users = null;
 
   @BeforeAll
   public void initialize() {
-    books = BookUtils.getDefaultBooks();
-    users = BookUtils.getTestUsers();
+    books = bookrepo.findAll();
+    users = usersrepo.findAll();
   }
 
   @Test
@@ -51,10 +49,5 @@ class BookworldApplicationTests {
     System.out.println(usersrepo.findAll().size() == 3);
     assertTrue(usersrepo.findAll().size() == 3);
     assertTrue(usersrepo.findAll().size() == userAccountrepo.findAll().size());
-  }
-
-  @Test
-  public void TestBookToReviews() {
-    users.forEach(user -> usersrepo.save(user));
   }
 }

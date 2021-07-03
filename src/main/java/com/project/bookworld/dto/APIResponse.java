@@ -3,14 +3,12 @@ package com.project.bookworld.dto;
 import java.io.Serializable;
 import java.util.Date;
 
-import org.springframework.http.HttpStatus;
-
 public class APIResponse implements Serializable {
 
   private static final long serialVersionUID = 1L;
 
   private String error;
-  private HttpStatus statusCode;
+  private int statusCode;
   private Object responseData;
   private Date date = new Date();
   private String path;
@@ -24,11 +22,11 @@ public class APIResponse implements Serializable {
     return this;
   }
 
-  public HttpStatus getStatusCode() {
+  public int getStatusCode() {
     return statusCode;
   }
 
-  public APIResponse setStatusCode(HttpStatus statusCode) {
+  public APIResponse setStatusCode(int statusCode) {
     this.statusCode = statusCode;
     return this;
   }

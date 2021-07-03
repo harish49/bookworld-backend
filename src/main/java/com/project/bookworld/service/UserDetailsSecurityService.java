@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import com.project.bookworld.dto.UserDetailsdto;
 import com.project.bookworld.entities.Users;
+import com.project.bookworld.repositories.UsersRepository;
 import com.project.bookworld.utils.BookUtils;
 
 @Service
@@ -19,6 +20,7 @@ public class UserDetailsSecurityService implements UserDetailsService {
 
   private static final Logger logger = LoggerFactory.getLogger(UserDetailsSecurityService.class);
   @Autowired private BookUtils utils;
+  @Autowired private UsersRepository usersRepo;
 
   @Override
   public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
@@ -26,8 +28,8 @@ public class UserDetailsSecurityService implements UserDetailsService {
     Optional<Users> user = null;
     try {
       user =
-          utils
-              .getTestUsers()
+          usersRepo
+              .findAll()
               .stream()
               .filter(users -> users.getUserName().equals(username))
               .findFirst();
