@@ -21,6 +21,12 @@ public class Users {
   @Column(name = "user_password", nullable = false)
   private String password;
 
+  @Column(name = "first_name")
+  private String firstName;
+
+  @Column(name = "last_name")
+  private String lastName;
+
   @Column(name = "email", nullable = false)
   private String email;
 
@@ -54,6 +60,22 @@ public class Users {
 
   public void setPassword(String password) {
     this.password = password;
+  }
+
+  public String getFirstName() {
+    return firstName;
+  }
+
+  public void setFirstName(String firstName) {
+    this.firstName = firstName;
+  }
+
+  public String getLastName() {
+    return lastName;
+  }
+
+  public void setLastName(String lastName) {
+    this.lastName = lastName;
   }
 
   public String getEmail() {
@@ -122,9 +144,7 @@ public class Users {
     final int prime = 31;
     int result = 1;
     result = prime * result + ((email == null) ? 0 : email.hashCode());
-    result = prime * result + ((isAdmin == null) ? 0 : isAdmin.hashCode());
     result = prime * result + ((mobileNumber == null) ? 0 : mobileNumber.hashCode());
-    result = prime * result + ((password == null) ? 0 : password.hashCode());
     result = prime * result + ((userName == null) ? 0 : userName.hashCode());
     return result;
   }
@@ -138,15 +158,9 @@ public class Users {
     if (email == null) {
       if (other.email != null) return false;
     } else if (!email.equals(other.email)) return false;
-    if (isAdmin == null) {
-      if (other.isAdmin != null) return false;
-    } else if (!isAdmin.equals(other.isAdmin)) return false;
     if (mobileNumber == null) {
       if (other.mobileNumber != null) return false;
     } else if (!mobileNumber.equals(other.mobileNumber)) return false;
-    if (password == null) {
-      if (other.password != null) return false;
-    } else if (!password.equals(other.password)) return false;
     if (userName == null) {
       if (other.userName != null) return false;
     } else if (!userName.equals(other.userName)) return false;

@@ -2,7 +2,7 @@ package com.project.bookworld.dto;
 
 import java.io.Serializable;
 
-public class Register implements Serializable {
+public class UserRequestResponse implements Serializable {
 
   private static final long serialVersionUID = 1L;
 
@@ -10,6 +10,8 @@ public class Register implements Serializable {
   private String password;
   private String mobileNumber;
   private String email;
+  private String firstName;
+  private String lastName;
 
   public String getUserName() {
     return userName;
@@ -17,6 +19,22 @@ public class Register implements Serializable {
 
   public void setUserName(String userName) {
     this.userName = userName;
+  }
+
+  public String getFirstName() {
+    return firstName;
+  }
+
+  public void setFirstName(String firstName) {
+    this.firstName = firstName;
+  }
+
+  public String getLastName() {
+    return lastName;
+  }
+
+  public void setLastName(String lastName) {
+    this.lastName = lastName;
   }
 
   public String getPassword() {

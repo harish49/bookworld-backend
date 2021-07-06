@@ -3,21 +3,20 @@ package com.project.bookworld.handler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.project.bookworld.BookWorldConstants;
 import com.project.bookworld.dto.APIResponse;
-import com.project.bookworld.dto.Login;
-import com.project.bookworld.dto.Register;
+import com.project.bookworld.dto.UserRequestResponse;
 import com.project.bookworld.service.UserService;
 
 @RestController
-@CrossOrigin
 @RequestMapping(BookWorldConstants.USERS)
 @SuppressWarnings({"all"})
 public class UserHandler {
@@ -25,39 +24,57 @@ public class UserHandler {
 
   @Autowired UserService userService;
 
-  @GetMapping("/testusers")
+  @GetMapping("/users")
   public APIResponse getTestUsers() {
-    logger.info("Getting default users from database");
     APIResponse response = null;
     try {
-      response = userService.getTestUsers();
-
+      response = userService.getUsersFromDatabase();
     } catch (Exception e) {
-      logger.error("Exception in getTestUsers()");
+      logger.error("Exception in /users route");
       e.printStackTrace();
     }
     return response;
   }
 
   @PostMapping("/login")
-  public APIResponse userLogin(@RequestBody Login userLogin) {
+  public APIResponse userLogin(@RequestBody UserRequestResponse userLogin) {
     APIResponse response = null;
     try {
       response = userService.userLogin(userLogin);
     } catch (Exception e) {
+      logger.error("Exception in /login route");
       e.printStackTrace();
     }
     return response;
   }
 
   @PostMapping("/signup")
-  public APIResponse registerUser(@RequestBody Register user) {
+  public APIResponse registerUser(@RequestBody UserRequestResponse user) {
     APIResponse response = null;
     try {
       response = userService.registerUser(user);
     } catch (Exception e) {
+      logger.error("Exception in /signup route");
       e.printStackTrace();
     }
     return response;
+  }
+
+  @PutMapping("/updateprofile")
+  public APIResponse updateProfile(@RequestBody UserRequestResponse profile) {
+    APIResponse response = null;
+    try {
+      response = userService.updateProfile(profile);
+    } catch (Exception e) {
+      logger.error("Exception in /updateprofile route");
+      e.printStackTrace();
+    }
+    return response;
+  }
+
+  @GetMapping("/ping")
+  public APIResponse ping() {
+    logger.info("Hitting Users resource");
+    return new APIResponse().setResponseData("pong").setStatusCode(HttpStatus.OK.value());
   }
 }

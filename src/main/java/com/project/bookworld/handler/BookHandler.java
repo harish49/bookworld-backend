@@ -3,7 +3,7 @@ package com.project.bookworld.handler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -14,7 +14,6 @@ import com.project.bookworld.dto.APIResponse;
 import com.project.bookworld.service.BookService;
 
 @RestController
-@CrossOrigin
 @RequestMapping(BookWorldConstants.BOOKS)
 @SuppressWarnings({"all"})
 public class BookHandler {
@@ -53,5 +52,11 @@ public class BookHandler {
       e.printStackTrace();
     }
     return response;
+  }
+
+  @GetMapping("/ping")
+  public APIResponse ping() {
+    logger.info("Hitting Books resource");
+    return new APIResponse().setResponseData("pong").setStatusCode(HttpStatus.OK.value());
   }
 }

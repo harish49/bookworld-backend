@@ -23,19 +23,20 @@ public class BookService {
 
   private static final Logger logger = LoggerFactory.getLogger(BookService.class);
   @Autowired private Environment env;
-  @Autowired BookRepository bookRepository;
+  @Autowired private BookRepository bookRepository;
 
   public APIResponse getBooksFromGoogle(@PathVariable("id") String id) {
     logger.info("Started to get books from google API");
-    GoogleAPIResponse googleResponse = null;
-    List<Book> books = null;
+    Optional<GoogleAPIResponse> googleResponse = Optional.ofNullable(null);
+    Optional<List<Book>> books = Optional.ofNullable(null);
     APIResponse response = new APIResponse();
     try {
       RestTemplate restTemplate = new RestTemplate();
       String URL = env.getProperty("bookSearchUrl") + id;
-      googleResponse = restTemplate.getForEntity(URL, GoogleAPIResponse.class).getBody();
-      books = BookUtils.parseJson(googleResponse);
-      response.setStatusCode(HttpStatus.OK.value()).setResponseData(books);
+      googleResponse =
+          Optional.ofNullable(restTemplate.getForEntity(URL, GoogleAPIResponse.class).getBody());
+      books = Optional.ofNullable(BookUtils.parseJson(googleResponse.get()));
+      response.setStatusCode(HttpStatus.OK.value()).setResponseData(books.get());
       logger.info("Sucessfully fetched the books from google API");
       System.out.println(googleResponse);
       return response;
@@ -52,7 +53,7 @@ public class BookService {
 
   public APIResponse getBook(String bookId) {
     logger.info("Fetching the book with id " + bookId);
-    Optional<Book> book = null;
+    Optional<Book> book = Optional.ofNullable(null);
     APIResponse response = new APIResponse();
     try {
       book = bookRepository.findById(bookId);
@@ -67,7 +68,7 @@ public class BookService {
       logger.info("Fetching the book " + bookId);
       response.setResponseData(book).setStatusCode(HttpStatus.OK.value());
     } else {
-      logger.info("Book is not available in database " + bookId);
+      logger.error("Book is not available in database " + bookId);
       response.setError("Book is not available").setStatusCode(HttpStatus.NO_CONTENT.value());
     }
     return response;
