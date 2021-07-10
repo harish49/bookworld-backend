@@ -1,14 +1,10 @@
 package com.project.bookworld.entities;
 
 import java.sql.Timestamp;
-import java.util.List;
 
-import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.OneToMany;
 import javax.persistence.Table;
 
 @Entity
@@ -34,9 +30,8 @@ public class Book {
   @Column(name = "book_thumbnail")
   String thumbnail;
 
-  @OneToMany(cascade = CascadeType.ALL)
-  @JoinColumn(name = "book_id_fk", referencedColumnName = "book_id")
-  List<BookReviews> reviews;
+  @Column(name = "review_count")
+  int reviews;
 
   @Column(name = "book_rating")
   int rating;
@@ -104,14 +99,6 @@ public class Book {
     this.thumbnail = thumbnail;
   }
 
-  public List<BookReviews> getReviews() {
-    return reviews;
-  }
-
-  public void setReviews(List<BookReviews> reviews) {
-    this.reviews = reviews;
-  }
-
   public int getRating() {
     return rating;
   }
@@ -134,6 +121,14 @@ public class Book {
 
   public void setPrice(double price) {
     this.price = price;
+  }
+
+  public int getReviews() {
+    return reviews;
+  }
+
+  public void setReviews(int reviews) {
+    this.reviews = reviews;
   }
 
   public int getAvailableCount() {

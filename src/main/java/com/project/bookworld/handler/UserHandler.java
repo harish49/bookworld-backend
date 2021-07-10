@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.project.bookworld.BookWorldConstants;
 import com.project.bookworld.dto.APIResponse;
+import com.project.bookworld.dto.PlaceOrder;
 import com.project.bookworld.dto.UserRequestResponse;
 import com.project.bookworld.service.UserService;
 
@@ -67,6 +68,17 @@ public class UserHandler {
       response = userService.updateProfile(profile);
     } catch (Exception e) {
       logger.error("Exception in /updateprofile route");
+      e.printStackTrace();
+    }
+    return response;
+  }
+
+  @PostMapping("/placeorder")
+  public APIResponse placeOrder(@RequestBody PlaceOrder order) {
+    APIResponse response = null;
+    try {
+      response = userService.createOrder(order);
+    } catch (Exception e) {
       e.printStackTrace();
     }
     return response;

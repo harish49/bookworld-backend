@@ -8,8 +8,8 @@ import javax.persistence.Id;
 import javax.persistence.Table;
 
 @Entity
-@Table(name = "book_reviews")
-public class BookReviews {
+@Table(name = "reviews")
+public class Reviews {
 
   @Id
   @Column(name = "review_id")
@@ -17,6 +17,12 @@ public class BookReviews {
 
   @Column(name = "book_comment")
   private String comment;
+
+  @Column(name = "book_id")
+  private String bookId;
+
+  @Column(name = "user_name")
+  private String userName;
 
   private int rating;
 
@@ -40,6 +46,22 @@ public class BookReviews {
 
   public void setComment(String comment) {
     this.comment = comment;
+  }
+
+  public String getBookId() {
+    return bookId;
+  }
+
+  public void setBookId(String bookId) {
+    this.bookId = bookId;
+  }
+
+  public String getUserName() {
+    return userName;
+  }
+
+  public void setUserName(String userName) {
+    this.userName = userName;
   }
 
   public int getRating() {

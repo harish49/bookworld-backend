@@ -12,7 +12,6 @@ import org.springframework.stereotype.Component;
 import com.project.bookworld.dto.GoogleAPIResponse;
 import com.project.bookworld.dto.Items;
 import com.project.bookworld.entities.Book;
-import com.project.bookworld.entities.BookReviews;
 import com.project.bookworld.security.WebSecurityConfiguration;
 
 @SuppressWarnings({"all"})
@@ -44,11 +43,6 @@ public class BookUtils {
     Book book = null;
     logger.info("Converting into Book.." + item);
     try {
-      ArrayList<BookReviews> reviews = new ArrayList<>();
-      BookReviews review = new BookReviews();
-      review.setRating(3);
-      review.setComment("Good");
-      reviews.add(review);
       int rating = 3;
       double price = Math.floor(Math.random() * 100 + 500);
       int count = 30;
@@ -59,8 +53,8 @@ public class BookUtils {
       book.setDescription(item.getInfo().getDescription());
       book.setPageCount(item.getInfo().getPageCount());
       book.setThumbnail(item.getInfo().getImageLinks().getThumbnail());
-      book.setReviews(reviews);
       book.setRating(rating);
+      book.setReviews(10);
       book.setCategories(
           item.getInfo().getCategories() != null
               ? item.getInfo().getCategories().get(0)

@@ -1,5 +1,6 @@
 package com.project.bookworld.service;
 
+import java.sql.Timestamp;
 import java.util.List;
 import java.util.Optional;
 
@@ -97,5 +98,17 @@ public class BookService {
       response.setStatusCode(HttpStatus.NO_CONTENT.value()).setResponseData(books);
     }
     return response;
+  }
+
+  public APIResponse insertBooks(Book book) {
+    try {
+      book.setCreatedTs(new Timestamp(System.currentTimeMillis()));
+      book.setUpdatedTs(new Timestamp(System.currentTimeMillis()));
+      bookRepository.save(book);
+    } catch (Exception e) {
+      logger.error("Exception in insertBooks");
+      e.printStackTrace();
+    }
+    return null;
   }
 }

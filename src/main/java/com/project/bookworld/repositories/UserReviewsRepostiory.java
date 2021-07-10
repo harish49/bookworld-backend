@@ -2,6 +2,6 @@ package com.project.bookworld.repositories;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import com.project.bookworld.entities.UserReviews;
+import com.project.bookworld.entities.Reviews;
 
-public interface UserReviewsRepostiory extends JpaRepository<UserReviews, String> {}
+public interface UserReviewsRepostiory extends JpaRepository<Reviews, String> {}

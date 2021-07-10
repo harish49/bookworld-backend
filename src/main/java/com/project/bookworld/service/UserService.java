@@ -1,9 +1,11 @@
 package com.project.bookworld.service;
 
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,10 +15,18 @@ import org.springframework.stereotype.Service;
 
 import com.project.bookworld.BookWorldConstants;
 import com.project.bookworld.dto.APIResponse;
+import com.project.bookworld.dto.PlaceOrder;
 import com.project.bookworld.dto.UserDetailsdto;
 import com.project.bookworld.dto.UserRequestResponse;
+import com.project.bookworld.entities.Address;
+import com.project.bookworld.entities.OrderItem;
+import com.project.bookworld.entities.Orders;
+import com.project.bookworld.entities.Payment;
+import com.project.bookworld.entities.PaymentMode;
+import com.project.bookworld.entities.PaymentStatus;
 import com.project.bookworld.entities.Users;
 import com.project.bookworld.entities.UsersAccount;
+import com.project.bookworld.repositories.UsersAccountRepository;
 import com.project.bookworld.repositories.UsersRepository;
 import com.project.bookworld.security.WebSecurityConfiguration;
 
@@ -28,6 +38,7 @@ public class UserService {
   @Autowired private WebSecurityConfiguration configuration;
   @Autowired private UserDetailsSecurityService userDetailsSecurityService;
   @Autowired private UsersRepository usersRepo;
+  @Autowired private UsersAccountRepository usersAccountRepo;
 
   public APIResponse getUsersFromDatabase() {
     logger.info("Getting users from database");
@@ -79,10 +90,10 @@ public class UserService {
       } catch (Exception e) {
         buildAPIResponse(
             HttpStatus.BAD_REQUEST.value(),
-            BookWorldConstants.USERNAME_NOT_FOUND.format(username),
+            String.format(BookWorldConstants.USERNAME_NOT_FOUND, username),
             null,
             response);
-        logger.error(BookWorldConstants.USERNAME_NOT_FOUND.format(username));
+        logger.error(String.format(BookWorldConstants.USERNAME_NOT_FOUND, username));
         e.printStackTrace();
         return response;
       }
@@ -93,12 +104,9 @@ public class UserService {
         userLogin.setPassword(null);
         buildAPIResponse(HttpStatus.ACCEPTED.value(), null, userLogin, response);
       } else {
-        logger.error(BookWorldConstants.INVALID_USERNAME_OR_PASSWORD);
+        logger.error(String.format(BookWorldConstants.INVALID_PASSWORD, username));
         buildAPIResponse(
-            HttpStatus.BAD_REQUEST.value(),
-            BookWorldConstants.INVALID_USERNAME_OR_PASSWORD,
-            null,
-            response);
+            HttpStatus.BAD_REQUEST.value(), BookWorldConstants.INVALID_PASSWORD, null, response);
       }
     } catch (Exception e) {
       logger.error("Exception in userLogin()");
@@ -121,10 +129,10 @@ public class UserService {
               .filter(exisitingUser -> exisitingUser.getUserName().equals(username))
               .findFirst();
       if (existingUserName.isPresent()) {
-        logger.error(BookWorldConstants.USERNAME_ALREADY_EXISTS.format(username));
+        logger.error(String.format(BookWorldConstants.USERNAME_ALREADY_EXISTS, username));
         buildAPIResponse(
             HttpStatus.NOT_ACCEPTABLE.value(),
-            BookWorldConstants.USERNAME_ALREADY_EXISTS.format(username),
+            String.format(BookWorldConstants.USERNAME_ALREADY_EXISTS, username),
             null,
             response);
       } else {
@@ -143,23 +151,20 @@ public class UserService {
         UsersAccount newUsersAccount = new UsersAccount();
         newUsersAccount.setUserName(username);
         newUsersAccount.setListOfOrders(Collections.EMPTY_LIST);
-        newUsersAccount.setListOfReviews(Collections.EMPTY_LIST);
         newUsersAccount.setCreatedTs(new Timestamp(System.currentTimeMillis()));
         newUsersAccount.setUpdatedTs(new Timestamp(System.currentTimeMillis()));
+        newUser.setUserAccount(newUsersAccount);
         try {
           usersRepo.save(newUser);
           user.setPassword(null);
           buildAPIResponse(HttpStatus.CREATED.value(), null, user, response);
-          logger.info(BookWorldConstants.ACCOUNT_CREATED_SUCCESSFULLY.format(username));
+          logger.info(String.format(BookWorldConstants.ACCOUNT_CREATED_SUCCESSFULLY, username));
         } catch (Exception e) {
           logger.error("Exception while saving new user in database");
           buildAPIResponse(
               HttpStatus.INTERNAL_SERVER_ERROR.value(), "Could not create account", user, response);
           e.printStackTrace();
         }
-        user.setPassword(null);
-        buildAPIResponse(HttpStatus.CREATED.value(), null, user, response);
-        logger.info(BookWorldConstants.ACCOUNT_CREATED_SUCCESSFULLY.format(username));
       }
     } catch (Exception e) {
       logger.error("Error in performing user Resitration for the user" + user.getUserName());
@@ -191,7 +196,7 @@ public class UserService {
               .filter(exisitingUser -> exisitingUser.getUserName().equals(username))
               .findFirst();
       if (!existingUser.isPresent()) {
-        logger.error(BookWorldConstants.USERNAME_NOT_FOUND.format(username));
+        logger.error(String.format(BookWorldConstants.USERNAME_NOT_FOUND, username));
         buildAPIResponse(HttpStatus.BAD_REQUEST.value(), "User does not exist", null, response);
       } else {
         existingUser.get().setUserName(username);
@@ -215,13 +220,9 @@ public class UserService {
           usersRepo.save(existingUser.get());
           logger.info("Successfully updated profile for user " + username);
           profile.setPassword(null);
-          response.setResponseData(profile).setStatusCode(HttpStatus.OK.value());
           buildAPIResponse(HttpStatus.OK.value(), null, profile, response);
         } catch (Exception e) {
           logger.error("Failed to update profile for user " + username);
-          response
-              .setError("Could not update details successfully")
-              .setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR.value());
           buildAPIResponse(
               HttpStatus.INTERNAL_SERVER_ERROR.value(), "Could not update profile", null, response);
           e.printStackTrace();
@@ -236,6 +237,64 @@ public class UserService {
     return response;
   }
 
+  public APIResponse createOrder(PlaceOrder order) {
+    logger.info("Placing order for user " + order.getUsername());
+    logger.info(order.getOrderItems() + " ");
+    APIResponse response = new APIResponse();
+    try {
+      String username = order.getUsername();
+      Optional<Users> user = usersRepo.findById(username);
+      if (user.isPresent()) {
+        Orders newOrder = new Orders();
+        newOrder.setOrderId(UUID.randomUUID().toString());
+        Address address = new Address();
+        address.setHouseNumber(order.getAddress().getHouseNumber());
+        address.setLocality(order.getAddress().getLocality());
+        address.setCity(order.getAddress().getCity());
+        address.setCountry(order.getAddress().getCountry());
+        address.setPincode(order.getAddress().getPincode());
+        newOrder.setShippingAddress(address);
+        List<OrderItem> orderItems = new ArrayList<>();
+        order
+            .getOrderItems()
+            .forEach(
+                singleOrder -> {
+                  OrderItem orderItem = new OrderItem();
+                  orderItem.setBookId(singleOrder.getBookId());
+                  orderItem.setQuantity(singleOrder.getQuantity());
+                  orderItems.add(orderItem);
+                });
+        newOrder.setOrders(orderItems);
+        Payment payment = new Payment();
+        payment.setDeliveryCharges(order.getPayment().getDeliveryCharges());
+        payment.setPrice(order.getPayment().getPrice());
+        payment.setPaymentStatus(
+            PaymentStatus.valueOfStatus(order.getPayment().getPaymentStatus()));
+        payment.setPaymentId(newOrder.getOrderId());
+        payment.setPaymentMode(PaymentMode.valueOfStatus(order.getPayment().getPaymentMode()));
+        newOrder.setPayment(payment);
+        newOrder.setCreatedTs(new Timestamp(System.currentTimeMillis()));
+        newOrder.setUpdatedTs(new Timestamp(System.currentTimeMillis()));
+        user.get().getUserAccount().getListOfOrders().add(newOrder);
+        usersRepo.save(user.get());
+        order.setId(newOrder.getOrderId());
+        buildAPIResponse(HttpStatus.CREATED.value(), null, order, response);
+        logger.info("Order placed successfully for the user " + username);
+      } else {
+        buildAPIResponse(
+            HttpStatus.NOT_FOUND.value(),
+            String.format(BookWorldConstants.USERNAME_NOT_FOUND, username),
+            null,
+            response);
+        logger.error("User does not exist");
+      }
+    } catch (Exception e) {
+      logger.error("Exception in placing order");
+      e.printStackTrace();
+    }
+    return response;
+  }
+
   private void buildAPIResponse(
       final int statusCode,
       final String error,
@@ -243,7 +302,6 @@ public class UserService {
       final APIResponse response) {
     try {
       response.setStatusCode(statusCode).setError(error).setResponseData(responseData);
-
     } catch (Exception e) {
       logger.error("Exception in buildAPIResponse()");
     }

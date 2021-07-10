@@ -26,7 +26,8 @@ public class Payment {
   private PaymentStatus paymentStatus;
 
   @Column(name = "payment_mode")
-  private String paymentMode;
+  @Enumerated(EnumType.STRING)
+  private PaymentMode paymentMode;
 
   public String getPaymentId() {
     return paymentId;
@@ -60,11 +61,11 @@ public class Payment {
     this.paymentStatus = paymentStatus;
   }
 
-  public String getPaymentMode() {
+  public PaymentMode getPaymentMode() {
     return paymentMode;
   }
 
-  public void setPaymentMode(String paymentMode) {
+  public void setPaymentMode(PaymentMode paymentMode) {
     this.paymentMode = paymentMode;
   }
 

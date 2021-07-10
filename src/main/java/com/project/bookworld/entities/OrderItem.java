@@ -1,7 +1,5 @@
 package com.project.bookworld.entities;
 
-import java.sql.Timestamp;
-
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -17,14 +15,11 @@ public class OrderItem {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private int pk;
 
-  @Column(name = "order_item_id")
-  private String orderItemId;
+  @Column(name = "book_id")
+  private String bookId;
 
-  @Column(name = "created_ts", updatable = false)
-  private Timestamp createdTs;
-
-  @Column(name = "updated_ts")
-  private Timestamp updatedTs;
+  @Column(name = "quantity")
+  private int quantity;
 
   public int getPk() {
     return pk;
@@ -34,32 +29,24 @@ public class OrderItem {
     this.pk = pk;
   }
 
-  public String getOrderItemId() {
-    return orderItemId;
+  public String getBookId() {
+    return bookId;
   }
 
-  public void setOrderItemId(String orderItemId) {
-    this.orderItemId = orderItemId;
+  public void setBookId(String bookId) {
+    this.bookId = bookId;
   }
 
-  public Timestamp getCreatedTs() {
-    return createdTs;
+  public int getQuantity() {
+    return quantity;
   }
 
-  public void setCreatedTs(Timestamp createdTs) {
-    this.createdTs = createdTs;
-  }
-
-  public Timestamp getUpdatedTs() {
-    return updatedTs;
-  }
-
-  public void setUpdatedTs(Timestamp updatedTs) {
-    this.updatedTs = updatedTs;
+  public void setQuantity(int quantity) {
+    this.quantity = quantity;
   }
 
   @Override
   public String toString() {
-    return "OrderItem [pk=" + pk + ", orderItemId=" + orderItemId + "]";
+    return "OrderItem [pk=" + pk + ", bookId=" + bookId + "]";
   }
 }

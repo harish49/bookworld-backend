@@ -22,9 +22,6 @@ public class Orders {
   @Column(name = "order_id")
   private String orderId;
 
-  @Column(name = "quantity")
-  private int quantity;
-
   @Column(name = "shipping_address")
   @Embedded
   private Address shippingAddress;
@@ -33,7 +30,10 @@ public class Orders {
   @JoinColumn(name = "payment_id")
   private Payment payment;
 
-  @OneToMany
+  @Column(name = "order_status")
+  private OrderStatus status;
+
+  @OneToMany(cascade = CascadeType.ALL)
   @JoinColumn(name = "order_id_fk", referencedColumnName = "order_id")
   private List<OrderItem> orders = new ArrayList<>();
 
@@ -49,14 +49,6 @@ public class Orders {
 
   public void setOrderId(String orderId) {
     this.orderId = orderId;
-  }
-
-  public int getQuantity() {
-    return quantity;
-  }
-
-  public void setQuantity(int quantity) {
-    this.quantity = quantity;
   }
 
   public Address getShippingAddress() {
@@ -103,8 +95,6 @@ public class Orders {
   public String toString() {
     return "Orders [orderId="
         + orderId
-        + ", quantity="
-        + quantity
         + ", shippingAddress="
         + shippingAddress
         + ", payment="

@@ -24,10 +24,6 @@ public class UsersAccount {
   @JoinColumn(name = "user_order", referencedColumnName = "user_name")
   private List<Orders> listOfOrders = new ArrayList<>();
 
-  @OneToMany(cascade = CascadeType.ALL)
-  @JoinColumn(name = "user_name_fk", referencedColumnName = "user_name")
-  private List<UserReviews> listOfReviews = new ArrayList<>();
-
   @Column(name = "created_ts", updatable = false)
   private Timestamp createdTs;
 
@@ -48,14 +44,6 @@ public class UsersAccount {
 
   public void setListOfOrders(List<Orders> listOfOrders) {
     this.listOfOrders = listOfOrders;
-  }
-
-  public List<UserReviews> getListOfReviews() {
-    return listOfReviews;
-  }
-
-  public void setListOfReviews(List<UserReviews> listOfReviews) {
-    this.listOfReviews = listOfReviews;
   }
 
   public Timestamp getCreatedTs() {
@@ -80,8 +68,6 @@ public class UsersAccount {
         + userName
         + ", listOfOrders="
         + listOfOrders
-        + ", listOfReviews="
-        + listOfReviews
         + ", createdTs="
         + createdTs
         + ", updatedTs="
