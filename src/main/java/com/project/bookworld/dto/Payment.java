@@ -1,6 +1,10 @@
 package com.project.bookworld.dto;
 
-public class Payment {
+import java.io.Serializable;
+
+public class Payment implements Serializable {
+
+  private static final long serialVersionUID = 1L;
   private double price;
   private double deliveryCharges;
   private String paymentStatus;

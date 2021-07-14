@@ -7,12 +7,14 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.project.bookworld.BookWorldConstants;
 import com.project.bookworld.dto.APIResponse;
+import com.project.bookworld.dto.Bookdto;
 import com.project.bookworld.entities.Book;
 import com.project.bookworld.service.BookService;
 
@@ -62,6 +64,17 @@ public class BookHandler {
     APIResponse response = null;
     try {
       response = bookService.insertBooks(books);
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+    return response;
+  }
+
+  @PutMapping("/updatebook")
+  public APIResponse updateBook(@RequestBody Bookdto book) {
+    APIResponse response = null;
+    try {
+      response = bookService.updateBookCount(book);
     } catch (Exception e) {
       e.printStackTrace();
     }

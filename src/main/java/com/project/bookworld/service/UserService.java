@@ -3,7 +3,9 @@ package com.project.bookworld.service;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -19,13 +21,17 @@ import com.project.bookworld.dto.PlaceOrder;
 import com.project.bookworld.dto.UserDetailsdto;
 import com.project.bookworld.dto.UserRequestResponse;
 import com.project.bookworld.entities.Address;
+import com.project.bookworld.entities.Book;
 import com.project.bookworld.entities.OrderItem;
+import com.project.bookworld.entities.OrderStatus;
 import com.project.bookworld.entities.Orders;
 import com.project.bookworld.entities.Payment;
 import com.project.bookworld.entities.PaymentMode;
 import com.project.bookworld.entities.PaymentStatus;
 import com.project.bookworld.entities.Users;
 import com.project.bookworld.entities.UsersAccount;
+import com.project.bookworld.repositories.BookRepository;
+import com.project.bookworld.repositories.OrdersRepository;
 import com.project.bookworld.repositories.UsersAccountRepository;
 import com.project.bookworld.repositories.UsersRepository;
 import com.project.bookworld.security.WebSecurityConfiguration;
@@ -39,6 +45,8 @@ public class UserService {
   @Autowired private UserDetailsSecurityService userDetailsSecurityService;
   @Autowired private UsersRepository usersRepo;
   @Autowired private UsersAccountRepository usersAccountRepo;
+  @Autowired private OrdersRepository ordersRepo;
+  @Autowired private BookRepository bookRepo;
 
   public APIResponse getUsersFromDatabase() {
     logger.info("Getting users from database");
@@ -47,6 +55,13 @@ public class UserService {
     try {
       try {
         users = Optional.of(usersRepo.findAll());
+        users
+            .get()
+            .forEach(
+                user -> {
+                  user.setUserAccount(null);
+                  user.setPassword(null);
+                });
       } catch (Exception e) {
         logger.error("Exception in getTestUsers()");
         buildAPIResponse(
@@ -237,14 +252,33 @@ public class UserService {
     return response;
   }
 
-  public APIResponse createOrder(PlaceOrder order) {
+  public synchronized APIResponse createOrder(PlaceOrder order) {
     logger.info("Placing order for user " + order.getUsername());
     logger.info(order.getOrderItems() + " ");
-    APIResponse response = new APIResponse();
+    final APIResponse response = new APIResponse();
     try {
       String username = order.getUsername();
       Optional<Users> user = usersRepo.findById(username);
+      Map<String, Book> cartItems = new HashMap<>();
       if (user.isPresent()) {
+        StringBuilder errorResponse = new StringBuilder();
+        order
+            .getOrderItems()
+            .forEach(
+                item -> {
+                  Optional<Book> bookInCart = bookRepo.findById(item.getBookId());
+                  if (bookInCart.isPresent()) {
+                    cartItems.putIfAbsent(bookInCart.get().getBookId(), bookInCart.get());
+                  } else {
+                    errorResponse.append(
+                        "Can't deliver required quantity of Book" + bookInCart.get().getTitle());
+                    errorResponse.append("\n");
+                  }
+                });
+        if (errorResponse.length() > 0) {
+          buildAPIResponse(HttpStatus.NO_CONTENT.value(), errorResponse.toString(), null, response);
+          return response;
+        }
         Orders newOrder = new Orders();
         newOrder.setOrderId(UUID.randomUUID().toString());
         Address address = new Address();
@@ -273,11 +307,22 @@ public class UserService {
         payment.setPaymentId(newOrder.getOrderId());
         payment.setPaymentMode(PaymentMode.valueOfStatus(order.getPayment().getPaymentMode()));
         newOrder.setPayment(payment);
+        newOrder.setStatus(OrderStatus.valueOfStatus(order.getOrderstatus()));
+        newOrder.setUserName(username);
         newOrder.setCreatedTs(new Timestamp(System.currentTimeMillis()));
         newOrder.setUpdatedTs(new Timestamp(System.currentTimeMillis()));
         user.get().getUserAccount().getListOfOrders().add(newOrder);
         usersRepo.save(user.get());
         order.setId(newOrder.getOrderId());
+        order
+            .getOrderItems()
+            .forEach(
+                item -> {
+                  Book cartItem = cartItems.getOrDefault(item.getBookId(), null);
+                  cartItem.setAvailableCount(cartItem.getAvailableCount() - item.getQuantity());
+                  bookRepo.save(cartItem);
+                });
+
         buildAPIResponse(HttpStatus.CREATED.value(), null, order, response);
         logger.info("Order placed successfully for the user " + username);
       } else {
@@ -290,6 +335,97 @@ public class UserService {
       }
     } catch (Exception e) {
       logger.error("Exception in placing order");
+      e.printStackTrace();
+    }
+    return response;
+  }
+
+  public APIResponse getOrder(String id) {
+
+    logger.info("Getting order by id" + id);
+    final APIResponse response = new APIResponse();
+    try {
+      Optional<Orders> order = ordersRepo.findById(id);
+      if (order.isPresent()) {
+        buildAPIResponse(HttpStatus.OK.value(), null, order, response);
+      } else {
+        buildAPIResponse(
+            HttpStatus.NOT_FOUND.value(), "Order with" + id + " does not exist", null, response);
+      }
+    } catch (Exception e) {
+      logger.error("Exception in getOrder()");
+      e.printStackTrace();
+    }
+    return response;
+  }
+
+  public APIResponse getOrders(String username) {
+    logger.info("Getting orders of user " + username);
+    final APIResponse response = new APIResponse();
+    try {
+      Optional<List<Orders>> orders =
+          Optional.ofNullable(usersAccountRepo.findById(username).get().getListOfOrders());
+      buildAPIResponse(HttpStatus.OK.value(), null, orders, response);
+      logger.info("Getting user orders...");
+    } catch (Exception e) {
+      logger.error("Exception in getOrders()");
+      buildAPIResponse(
+          HttpStatus.INTERNAL_SERVER_ERROR.value(),
+          "Could not fetch user's orders",
+          null,
+          response);
+      e.printStackTrace();
+    }
+    return response;
+  }
+
+  public APIResponse removeUser(String username) {
+    logger.info("Removing the user..." + username);
+    APIResponse response = new APIResponse();
+    try {
+      usersRepo.deleteById(username);
+      logger.info("User deleted successfully");
+      buildAPIResponse(
+          HttpStatus.NO_CONTENT.value(),
+          null,
+          "user " + username + " deleted successfully",
+          response);
+    } catch (Exception e) {
+      logger.error("Exception in removeUser()");
+      buildAPIResponse(
+          HttpStatus.INTERNAL_SERVER_ERROR.value(), "Could not delete user!", null, response);
+      e.printStackTrace();
+    }
+    return response;
+  }
+
+  public APIResponse updateOrder(PlaceOrder order) {
+    logger.info("Updating order..." + order.getId());
+    APIResponse response = new APIResponse();
+    try {
+      Optional<Orders> myOrder = ordersRepo.findById(order.getId());
+      if (myOrder.isPresent()) {
+        myOrder.get().setStatus(OrderStatus.valueOfStatus(order.getOrderstatus()));
+        ordersRepo.save(myOrder.get());
+        buildAPIResponse(
+            HttpStatus.ACCEPTED.value(),
+            null,
+            "Order Id " + order.getId() + " successfully updated!",
+            response);
+        logger.info("Successfully update order " + order.getId());
+      } else {
+        buildAPIResponse(
+            HttpStatus.NOT_FOUND.value(),
+            "Order Id" + order.getId() + " does not exist",
+            null,
+            response);
+        logger.error("Could not find order " + order.getId());
+      }
+    } catch (Exception e) {
+      logger.error("Exception in updateOrder()");
+      buildAPIResponse(
+          HttpStatus.INTERNAL_SERVER_ERROR.value(), "Could not update order!", null, response);
+
       e.printStackTrace();
     }
     return response;

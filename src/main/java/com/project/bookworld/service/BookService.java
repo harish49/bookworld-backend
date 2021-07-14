@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.client.RestTemplate;
 
 import com.project.bookworld.dto.APIResponse;
+import com.project.bookworld.dto.Bookdto;
 import com.project.bookworld.dto.GoogleAPIResponse;
 import com.project.bookworld.entities.Book;
 import com.project.bookworld.repositories.BookRepository;
@@ -110,5 +111,40 @@ public class BookService {
       e.printStackTrace();
     }
     return null;
+  }
+
+  public synchronized APIResponse updateBookCount(Bookdto book) {
+    logger.info("Updating book count for book " + book.getBookId());
+    APIResponse response = new APIResponse();
+    try {
+      Optional<Book> bookTobeUpdated = bookRepository.findById(book.getBookId());
+      if (bookTobeUpdated.isPresent()) {
+        bookTobeUpdated.get().setAvailableCount(book.getCount());
+        bookRepository.save(bookTobeUpdated.get());
+        buildAPIResponse(HttpStatus.ACCEPTED.value(), null, book, response);
+        logger.info("Successfully updated book " + book.getBookId());
+      } else {
+        logger.error("Book is not available" + book.getBookId());
+        buildAPIResponse(HttpStatus.NOT_FOUND.value(), "Book not available", null, response);
+      }
+    } catch (Exception e) {
+      logger.error("Exception in updateBook()");
+      buildAPIResponse(
+          HttpStatus.INTERNAL_SERVER_ERROR.value(), "Could not update book", null, response);
+      e.printStackTrace();
+    }
+    return response;
+  }
+
+  private void buildAPIResponse(
+      final int statusCode,
+      final String error,
+      final Object responseData,
+      final APIResponse response) {
+    try {
+      response.setStatusCode(statusCode).setError(error).setResponseData(responseData);
+    } catch (Exception e) {
+      logger.error("Exception in buildAPIResponse()");
+    }
   }
 }

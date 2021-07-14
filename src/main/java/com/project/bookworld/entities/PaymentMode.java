@@ -2,7 +2,7 @@ package com.project.bookworld.entities;
 
 public enum PaymentMode {
   CREDITCARD("CREDITCARD"),
-  RAZORPAY("CREDITCARD");
+  RAZORPAY("RAZORPAY");
   public final String alias;
 
   PaymentMode(String mode) {

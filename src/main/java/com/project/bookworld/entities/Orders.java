@@ -33,6 +33,9 @@ public class Orders {
   @Column(name = "order_status")
   private OrderStatus status;
 
+  @Column(name = "user_name")
+  private String userName;
+
   @OneToMany(cascade = CascadeType.ALL)
   @JoinColumn(name = "order_id_fk", referencedColumnName = "order_id")
   private List<OrderItem> orders = new ArrayList<>();
@@ -65,6 +68,22 @@ public class Orders {
 
   public void setPayment(Payment payment) {
     this.payment = payment;
+  }
+
+  public OrderStatus getStatus() {
+    return status;
+  }
+
+  public void setStatus(OrderStatus status) {
+    this.status = status;
+  }
+
+  public String getUserName() {
+    return userName;
+  }
+
+  public void setUserName(String userName) {
+    this.userName = userName;
   }
 
   public List<OrderItem> getOrders() {
