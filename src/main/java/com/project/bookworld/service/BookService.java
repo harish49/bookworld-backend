@@ -1,31 +1,46 @@
 package com.project.bookworld.service;
 
 import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.client.RestTemplate;
 
+import com.project.bookworld.BookWorldConstants;
 import com.project.bookworld.dto.APIResponse;
 import com.project.bookworld.dto.Bookdto;
 import com.project.bookworld.dto.GoogleAPIResponse;
+import com.project.bookworld.dto.Review;
 import com.project.bookworld.entities.Book;
+import com.project.bookworld.entities.Reviews;
 import com.project.bookworld.repositories.BookRepository;
+import com.project.bookworld.repositories.ReviewsRepository;
 import com.project.bookworld.utils.BookUtils;
 
 @Service
 public class BookService {
 
   private static final Logger logger = LoggerFactory.getLogger(BookService.class);
+  public static final Map<String, Book> mapOfExistingBooks = new ConcurrentHashMap<>();
   @Autowired private Environment env;
   @Autowired private BookRepository bookRepository;
+  @Autowired private ReviewsRepository reviewRepo;
 
   public APIResponse getBooksFromGoogle(@PathVariable("id") String id) {
     logger.info("Started to get books from google API");
@@ -34,20 +49,39 @@ public class BookService {
     APIResponse response = new APIResponse();
     try {
       RestTemplate restTemplate = new RestTemplate();
-      String URL = env.getProperty("bookSearchUrl") + id;
+      String URL = env.getProperty(BookWorldConstants.BOOK_SEARCH_URL) + id;
       googleResponse =
           Optional.ofNullable(restTemplate.getForEntity(URL, GoogleAPIResponse.class).getBody());
       books = Optional.ofNullable(BookUtils.parseJson(googleResponse.get()));
-      response.setStatusCode(HttpStatus.OK.value()).setResponseData(books.get());
-      logger.info("Sucessfully fetched the books from google API");
-      System.out.println(googleResponse);
-      return response;
+      List<Book> resultantBooks = new ArrayList<>();
+      if (books.isPresent() && books.get().size() > 0) {
+        logger.info("Sucessfully fetched the books from google API");
+        books
+            .get()
+            .forEach(
+                book -> {
+                  if (!mapOfExistingBooks.containsKey(book.getBookId())) {
+                    bookRepository.save(book);
+                    mapOfExistingBooks.put(book.getBookId(), book);
+                    resultantBooks.add(book);
+                  } else {
+                    resultantBooks.add(mapOfExistingBooks.get(book.getBookId()));
+                  }
+                });
+        buildAPIResponse(HttpStatus.OK.value(), null, books, response);
 
+      } else {
+        buildAPIResponse(
+            HttpStatus.NOT_FOUND.value(), "Your search did not match any books", null, response);
+        logger.info("No search items found");
+      }
     } catch (Exception e) {
       logger.error("Exception in getBooksFromGoogle()");
-      response
-          .setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR.value())
-          .setError("Could not hit google API");
+      buildAPIResponse(
+          HttpStatus.INTERNAL_SERVER_ERROR.value(),
+          "Exception in searching for book",
+          null,
+          response);
       e.printStackTrace();
     }
     return response;
@@ -101,6 +135,40 @@ public class BookService {
     return response;
   }
 
+  public APIResponse writeReview(Review review) {
+    logger.info("Inserting " + review.getUsername() + "'s review");
+    APIResponse response = new APIResponse();
+    try {
+      Reviews newReview = new Reviews();
+      newReview.setReviewid(UUID.randomUUID().toString());
+      newReview.setBookId(review.getBookId());
+      newReview.setComment(review.getComment());
+      newReview.setRating(review.getRating());
+      newReview.setUserName(review.getUsername());
+      newReview.setCreatedTs(new Timestamp(System.currentTimeMillis()));
+      newReview.setUpdatedTs(new Timestamp(System.currentTimeMillis()));
+      reviewRepo.save(newReview);
+      review.setCreatedAt(newReview.getCreatedTs());
+      review.setId(newReview.getReviewid());
+      Optional<Book> bookToUpdate = bookRepository.findById(review.getBookId());
+      bookToUpdate.get().setReviews(bookToUpdate.get().getReviews() + 1);
+      bookToUpdate
+          .get()
+          .setRating(
+              (bookToUpdate.get().getRating() + review.getRating())
+                  / (bookToUpdate.get().getReviews()));
+      bookRepository.save(bookToUpdate.get());
+      mapOfExistingBooks.put(bookToUpdate.get().getBookId(), bookToUpdate.get());
+      buildAPIResponse(HttpStatus.CREATED.value(), null, review, response);
+    } catch (Exception e) {
+      logger.error("Exception in writeReview()");
+      buildAPIResponse(
+          HttpStatus.INTERNAL_SERVER_ERROR.value(), "Could not write a review!", null, response);
+      e.printStackTrace();
+    }
+    return response;
+  }
+
   public APIResponse insertBooks(Book book) {
     try {
       book.setCreatedTs(new Timestamp(System.currentTimeMillis()));
@@ -121,6 +189,7 @@ public class BookService {
       if (bookTobeUpdated.isPresent()) {
         bookTobeUpdated.get().setAvailableCount(book.getCount());
         bookRepository.save(bookTobeUpdated.get());
+        mapOfExistingBooks.put(bookTobeUpdated.get().getBookId(), bookTobeUpdated.get());
         buildAPIResponse(HttpStatus.ACCEPTED.value(), null, book, response);
         logger.info("Successfully updated book " + book.getBookId());
       } else {
@@ -134,6 +203,56 @@ public class BookService {
       e.printStackTrace();
     }
     return response;
+  }
+
+  public APIResponse getAllReviews(String bookId) {
+    logger.info("Getting all reviews");
+    APIResponse response = new APIResponse();
+    try {
+      List<Reviews> reviews = reviewRepo.getReviewsByBookId(bookId);
+      Comparator<Reviews> sortByTimestamp =
+          (reviewA, reviewB) -> {
+            System.out.println(reviewA.getUpdatedTs() + " " + reviewB.getUpdatedTs());
+            return reviewA.getUpdatedTs().equals(reviewB.getUpdatedTs())
+                ? 0
+                : reviewA.getUpdatedTs().before(reviewB.getUpdatedTs()) ? -1 : 1;
+          };
+      Collections.sort(reviews, sortByTimestamp);
+      buildAPIResponse(HttpStatus.OK.value(), null, reviews, response);
+    } catch (Exception e) {
+      logger.error("Exception in getAllReviews()");
+      buildAPIResponse(
+          HttpStatus.INTERNAL_SERVER_ERROR.value(),
+          "Could not fetch reviews of book",
+          null,
+          response);
+      e.printStackTrace();
+    }
+    return response;
+  }
+
+  @Async
+  @EventListener(ApplicationReadyEvent.class)
+  private void loadExisitngBooks() {
+    logger.info("Loading existing books from database");
+    try {
+      bookRepository
+          .findAll()
+          .forEach(
+              book -> {
+                mapOfExistingBooks.putIfAbsent(book.getBookId(), book);
+              });
+      logger.info("Successfully loaded books from database into temporary storage");
+      mapOfExistingBooks
+          .entrySet()
+          .forEach(
+              book -> {
+                logger.info(book.getKey() + " " + book.getValue().toString());
+              });
+    } catch (Exception e) {
+      logger.error("Exception in loading Existing books");
+      e.printStackTrace();
+    }
   }
 
   private void buildAPIResponse(

@@ -7,8 +7,10 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
+import com.project.bookworld.BookWorldConstants;
 import com.project.bookworld.dto.GoogleAPIResponse;
 import com.project.bookworld.dto.Items;
 import com.project.bookworld.entities.Book;
@@ -21,6 +23,7 @@ public class BookUtils {
   private static final Logger logger = LoggerFactory.getLogger(BookUtils.class);
 
   @Autowired WebSecurityConfiguration securityconfiguration;
+  @Autowired private static Environment env;
 
   public static List<Book> parseJson(GoogleAPIResponse booksFromGoogle) {
 
@@ -30,6 +33,8 @@ public class BookUtils {
           booksFromGoogle
               .getItems()
               .parallelStream()
+              .filter(
+                  book -> BookWorldConstants.DEFAULT_BOOKS.contains(book.getId()) ? false : true)
               .map(item -> convertToBook(item))
               .collect(Collectors.toList());
     } catch (Exception e) {
@@ -43,9 +48,7 @@ public class BookUtils {
     Book book = null;
     logger.info("Converting into Book.." + item);
     try {
-      int rating = 3;
       double price = Math.floor(Math.random() * 100 + 500);
-      int count = 30;
       book = new Book();
       book.setBookId(item.getId());
       book.setTitle(item.getInfo().getTitle());
@@ -53,14 +56,12 @@ public class BookUtils {
       book.setDescription(item.getInfo().getDescription());
       book.setPageCount(item.getInfo().getPageCount());
       book.setThumbnail(item.getInfo().getImageLinks().getThumbnail());
-      book.setRating(rating);
-      book.setReviews(10);
       book.setCategories(
           item.getInfo().getCategories() != null
               ? item.getInfo().getCategories().get(0)
               : "Unknown");
       book.setPrice(price);
-      book.setAvailableCount(count);
+      book.setAvailableCount(30);
       return book;
     } catch (Exception e) {
       logger.error("Exception in convertingToBook()");

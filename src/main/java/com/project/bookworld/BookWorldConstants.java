@@ -12,4 +12,6 @@ public interface BookWorldConstants {
   String INVALID_USERNAME = "Invalid username";
   String INVALID_PASSWORD = "Invalid password";
   String NO_USERS_IN_DATABASE = "No users are present in database";
+  String DEFAULT_BOOKS = "Change this";
+  String BOOK_SEARCH_URL = "BOOK_SEARCH_URL";
 }

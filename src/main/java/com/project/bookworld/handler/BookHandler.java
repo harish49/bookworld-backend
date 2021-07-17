@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.project.bookworld.BookWorldConstants;
 import com.project.bookworld.dto.APIResponse;
 import com.project.bookworld.dto.Bookdto;
+import com.project.bookworld.dto.Review;
 import com.project.bookworld.entities.Book;
 import com.project.bookworld.service.BookService;
 
@@ -26,7 +27,7 @@ public class BookHandler {
   private static final Logger logger = LoggerFactory.getLogger(BookHandler.class);
   @Autowired private BookService bookService;
 
-  @GetMapping("/getbooks/{id}")
+  @GetMapping("/googlebooks/{id}")
   public APIResponse getBooksFromGoogle(@PathVariable("id") String id) {
     APIResponse response = null;
     try {
@@ -64,6 +65,28 @@ public class BookHandler {
     APIResponse response = null;
     try {
       response = bookService.insertBooks(books);
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+    return response;
+  }
+
+  @PostMapping("/review")
+  public APIResponse writeReview(@RequestBody Review review) {
+    APIResponse response = null;
+    try {
+      response = bookService.writeReview(review);
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+    return response;
+  }
+
+  @GetMapping("/reviews/{bookId}")
+  public APIResponse getReviews(@PathVariable("bookId") String bookId) {
+    APIResponse response = null;
+    try {
+      response = bookService.getAllReviews(bookId);
     } catch (Exception e) {
       e.printStackTrace();
     }

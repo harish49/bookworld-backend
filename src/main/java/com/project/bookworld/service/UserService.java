@@ -117,6 +117,11 @@ public class UserService {
           configuration.getEncoder().matches(password, user.getPassword());
       if (credentialsMatched) {
         userLogin.setPassword(null);
+        String role =
+            user.getUser().getIsAdmin().equalsIgnoreCase("Y")
+                ? BookWorldConstants.ADMIN
+                : BookWorldConstants.USERS;
+        userLogin.setRole(role);
         buildAPIResponse(HttpStatus.ACCEPTED.value(), null, userLogin, response);
       } else {
         logger.error(String.format(BookWorldConstants.INVALID_PASSWORD, username));
@@ -230,11 +235,16 @@ public class UserService {
         if (lastName.length() > 0) {
           existingUser.get().setLastName(lastName);
         }
+
         existingUser.get().setUpdatedTs(new Timestamp(System.currentTimeMillis()));
         try {
           usersRepo.save(existingUser.get());
           logger.info("Successfully updated profile for user " + username);
           profile.setPassword(null);
+          profile.setRole(
+              existingUser.get().getIsAdmin().equalsIgnoreCase("Y")
+                  ? BookWorldConstants.ADMIN
+                  : BookWorldConstants.USERS);
           buildAPIResponse(HttpStatus.OK.value(), null, profile, response);
         } catch (Exception e) {
           logger.error("Failed to update profile for user " + username);
@@ -321,8 +331,9 @@ public class UserService {
                   Book cartItem = cartItems.getOrDefault(item.getBookId(), null);
                   cartItem.setAvailableCount(cartItem.getAvailableCount() - item.getQuantity());
                   bookRepo.save(cartItem);
+                  BookService.mapOfExistingBooks.put(cartItem.getBookId(), cartItem);
                 });
-
+        order.setCreatedAt(new Timestamp(System.currentTimeMillis()));
         buildAPIResponse(HttpStatus.CREATED.value(), null, order, response);
         logger.info("Order placed successfully for the user " + username);
       } else {

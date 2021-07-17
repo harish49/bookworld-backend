@@ -3,8 +3,7 @@ package com.project.bookworld.entities;
 public enum PaymentStatus {
   SUCCESS("SUCCESS"),
   FAILED("FAILED"),
-  PROCESSING("PROCESSING"),
-  ;
+  PROCESSING("PROCESSING");
 
   public final String alias;
 

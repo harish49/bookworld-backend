@@ -9,6 +9,7 @@ public class UserRequestResponse implements Serializable {
   private String userName;
   private String password;
   private String mobileNumber;
+  private String role;
   private String email;
   private String firstName;
   private String lastName;
@@ -59,5 +60,13 @@ public class UserRequestResponse implements Serializable {
 
   public void setEmail(String email) {
     this.email = email;
+  }
+
+  public String getRole() {
+    return role;
+  }
+
+  public void setRole(String role) {
+    this.role = role;
   }
 }
