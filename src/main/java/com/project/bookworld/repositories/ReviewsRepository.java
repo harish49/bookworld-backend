@@ -16,4 +16,6 @@ public interface ReviewsRepository extends JpaRepository<Reviews, String> {
         .filter(review -> review.getBookId().equals(bookId))
         .collect(Collectors.toList());
   }
+
+  List<Reviews> findByUserName(String username);
 }

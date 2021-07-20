@@ -19,7 +19,6 @@ import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.client.RestTemplate;
 
 import com.project.bookworld.BookWorldConstants;
@@ -42,14 +41,20 @@ public class BookService {
   @Autowired private BookRepository bookRepository;
   @Autowired private ReviewsRepository reviewRepo;
 
-  public APIResponse getBooksFromGoogle(@PathVariable("id") String id) {
+  /**
+   * Method to call google books API to fetch search results
+   *
+   * @param bookname
+   * @return
+   */
+  public APIResponse getBooksFromGoogle(String bookname) {
     logger.info("Started to get books from google API");
     Optional<GoogleAPIResponse> googleResponse = Optional.ofNullable(null);
     Optional<List<Book>> books = Optional.ofNullable(null);
     APIResponse response = new APIResponse();
     try {
       RestTemplate restTemplate = new RestTemplate();
-      String URL = env.getProperty(BookWorldConstants.BOOK_SEARCH_URL) + id;
+      String URL = env.getProperty(BookWorldConstants.BOOK_SEARCH_URL) + bookname;
       googleResponse =
           Optional.ofNullable(restTemplate.getForEntity(URL, GoogleAPIResponse.class).getBody());
       books = Optional.ofNullable(BookUtils.parseJson(googleResponse.get()));
@@ -87,6 +92,12 @@ public class BookService {
     return response;
   }
 
+  /**
+   * Method to fetch a book by bookId
+   *
+   * @param bookId
+   * @return
+   */
   public APIResponse getBook(String bookId) {
     logger.info("Fetching the book with id " + bookId);
     Optional<Book> book = Optional.ofNullable(null);
@@ -110,7 +121,12 @@ public class BookService {
     return response;
   }
 
-  public APIResponse getDefaultBooks() {
+  /**
+   * Method to fetch all books from database
+   *
+   * @return
+   */
+  public APIResponse getAllBooks() {
     Optional<List<Book>> books = Optional.ofNullable(null);
     APIResponse response = new APIResponse();
     logger.info("Getting default books from database");
@@ -135,6 +151,12 @@ public class BookService {
     return response;
   }
 
+  /**
+   * Method to insert a user's review in database
+   *
+   * @param review
+   * @return
+   */
   public APIResponse writeReview(Review review) {
     logger.info("Inserting " + review.getUsername() + "'s review");
     APIResponse response = new APIResponse();
@@ -152,11 +174,7 @@ public class BookService {
       review.setId(newReview.getReviewid());
       Optional<Book> bookToUpdate = bookRepository.findById(review.getBookId());
       bookToUpdate.get().setReviews(bookToUpdate.get().getReviews() + 1);
-      bookToUpdate
-          .get()
-          .setRating(
-              (bookToUpdate.get().getRating() + review.getRating())
-                  / (bookToUpdate.get().getReviews()));
+      bookToUpdate.get().setRating((bookToUpdate.get().getRating() + review.getRating()));
       bookRepository.save(bookToUpdate.get());
       mapOfExistingBooks.put(bookToUpdate.get().getBookId(), bookToUpdate.get());
       buildAPIResponse(HttpStatus.CREATED.value(), null, review, response);
@@ -169,6 +187,12 @@ public class BookService {
     return response;
   }
 
+  /**
+   * Method to insert books in database
+   *
+   * @param book
+   * @return
+   */
   public APIResponse insertBooks(Book book) {
     try {
       book.setCreatedTs(new Timestamp(System.currentTimeMillis()));
@@ -181,6 +205,12 @@ public class BookService {
     return null;
   }
 
+  /**
+   * Method to update book available count.
+   *
+   * @param book
+   * @return
+   */
   public synchronized APIResponse updateBookCount(Bookdto book) {
     logger.info("Updating book count for book " + book.getBookId());
     APIResponse response = new APIResponse();
@@ -205,6 +235,12 @@ public class BookService {
     return response;
   }
 
+  /**
+   * Method to fetch all reviews of a book
+   *
+   * @param bookId
+   * @return
+   */
   public APIResponse getAllReviews(String bookId) {
     logger.info("Getting all reviews");
     APIResponse response = new APIResponse();
@@ -231,6 +267,7 @@ public class BookService {
     return response;
   }
 
+  /** Method to load existing books on application startup. */
   @Async
   @EventListener(ApplicationReadyEvent.class)
   private void loadExisitngBooks() {
@@ -255,6 +292,14 @@ public class BookService {
     }
   }
 
+  /**
+   * Helper Method to build the response
+   *
+   * @param statusCode
+   * @param error
+   * @param responseData
+   * @param response
+   */
   private void buildAPIResponse(
       final int statusCode,
       final String error,

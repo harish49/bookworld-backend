@@ -19,6 +19,9 @@ public class JWTUtils {
   @Value("${SECRET_KEY}")
   private String SECRET_KEY;
 
+  @Value("${TOKEN_EXPIRATION_TIME}")
+  private long TOKEN_EXPIRATION_TIME;
+
   public String extractUsername(String token) {
     return extractClaim(token, Claims::getSubject);
   }
@@ -51,13 +54,14 @@ public class JWTUtils {
         .setClaims(claims)
         .setSubject(subject)
         .setIssuedAt(new Date(System.currentTimeMillis()))
-        .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10))
+        .setExpiration(new Date(System.currentTimeMillis() + TOKEN_EXPIRATION_TIME))
         .signWith(SignatureAlgorithm.HS256, SECRET_KEY)
         .compact();
   }
 
   public Boolean validateToken(String token, UserDetails userDetails) {
     final String username = extractUsername(token);
+    System.out.println(username + " " + userDetails.getUsername());
     return (username.equals(userDetails.getUsername()) && !isTokenExpired(token));
   }
 }

@@ -28,10 +28,12 @@ import com.project.bookworld.entities.Orders;
 import com.project.bookworld.entities.Payment;
 import com.project.bookworld.entities.PaymentMode;
 import com.project.bookworld.entities.PaymentStatus;
+import com.project.bookworld.entities.Reviews;
 import com.project.bookworld.entities.Users;
 import com.project.bookworld.entities.UsersAccount;
 import com.project.bookworld.repositories.BookRepository;
 import com.project.bookworld.repositories.OrdersRepository;
+import com.project.bookworld.repositories.ReviewsRepository;
 import com.project.bookworld.repositories.UsersAccountRepository;
 import com.project.bookworld.repositories.UsersRepository;
 import com.project.bookworld.security.WebSecurityConfiguration;
@@ -44,11 +46,17 @@ public class UserService {
   @Autowired private WebSecurityConfiguration configuration;
   @Autowired private UserDetailsSecurityService userDetailsSecurityService;
   @Autowired private UsersRepository usersRepo;
+  @Autowired private ReviewsRepository reviewsRepo;
   @Autowired private UsersAccountRepository usersAccountRepo;
   @Autowired private OrdersRepository ordersRepo;
   @Autowired private BookRepository bookRepo;
 
-  public APIResponse getUsersFromDatabase() {
+  /**
+   * Method to fetch all users from database
+   *
+   * @return
+   */
+  public APIResponse getAllUsers() {
     logger.info("Getting users from database");
     Optional<List<Users>> users = Optional.ofNullable(null);
     final APIResponse response = new APIResponse();
@@ -94,6 +102,12 @@ public class UserService {
     return response;
   }
 
+  /**
+   * Method to validate and process user's login request
+   *
+   * @param userLogin
+   * @return
+   */
   public APIResponse userLogin(UserRequestResponse userLogin) {
     logger.info("Started to validate credentials for the user " + userLogin.getUserName());
     final APIResponse response = new APIResponse();
@@ -137,6 +151,12 @@ public class UserService {
     return response;
   }
 
+  /**
+   * Method to validate and process user's registration request
+   *
+   * @param user
+   * @return
+   */
   public APIResponse registerUser(UserRequestResponse user) {
     logger.info("Registering the user..." + user.getUserName());
     final APIResponse response = new APIResponse();
@@ -198,6 +218,12 @@ public class UserService {
     return response;
   }
 
+  /**
+   * Method to update the user's profile
+   *
+   * @param profile
+   * @return
+   */
   public APIResponse updateProfile(UserRequestResponse profile) {
 
     logger.info("Updating profile for user " + profile.getUserName());
@@ -262,6 +288,12 @@ public class UserService {
     return response;
   }
 
+  /**
+   * Method to place user's order
+   *
+   * @param order
+   * @return
+   */
   public synchronized APIResponse createOrder(PlaceOrder order) {
     logger.info("Placing order for user " + order.getUsername());
     logger.info(order.getOrderItems() + " ");
@@ -351,6 +383,12 @@ public class UserService {
     return response;
   }
 
+  /**
+   * Method to fetch order by orderId
+   *
+   * @param id
+   * @return
+   */
   public APIResponse getOrder(String id) {
 
     logger.info("Getting order by id" + id);
@@ -370,6 +408,12 @@ public class UserService {
     return response;
   }
 
+  /**
+   * Method to fetch all orders of a user
+   *
+   * @param username
+   * @return
+   */
   public APIResponse getOrders(String username) {
     logger.info("Getting orders of user " + username);
     final APIResponse response = new APIResponse();
@@ -390,6 +434,12 @@ public class UserService {
     return response;
   }
 
+  /**
+   * Method to remove a user from database
+   *
+   * @param username
+   * @return
+   */
   public APIResponse removeUser(String username) {
     logger.info("Removing the user..." + username);
     APIResponse response = new APIResponse();
@@ -401,6 +451,16 @@ public class UserService {
           null,
           "user " + username + " deleted successfully",
           response);
+      List<Reviews> reviewsOfUser = reviewsRepo.findByUserName(username);
+      reviewsRepo.deleteAll(reviewsOfUser);
+      for (Reviews review : reviewsOfUser) {
+        Optional<Book> book = bookRepo.findById(review.getBookId());
+        book.get().setRating(book.get().getRating() - review.getRating());
+        book.get().setReviews(book.get().getReviews() - 1);
+        bookRepo.save(book.get());
+      }
+
+      logger.info("Deleting  the  user's reviews since the user is deleted");
     } catch (Exception e) {
       logger.error("Exception in removeUser()");
       buildAPIResponse(
@@ -410,6 +470,12 @@ public class UserService {
     return response;
   }
 
+  /**
+   * Method to update the status of user's order
+   *
+   * @param order
+   * @return
+   */
   public APIResponse updateOrder(PlaceOrder order) {
     logger.info("Updating order..." + order.getId());
     APIResponse response = new APIResponse();
@@ -442,6 +508,14 @@ public class UserService {
     return response;
   }
 
+  /**
+   * Helper method to build the response
+   *
+   * @param statusCode
+   * @param error
+   * @param responseData
+   * @param response
+   */
   private void buildAPIResponse(
       final int statusCode,
       final String error,

@@ -19,6 +19,10 @@ import com.project.bookworld.dto.Review;
 import com.project.bookworld.entities.Book;
 import com.project.bookworld.service.BookService;
 
+/**
+ * @author Harish Vemula
+ *     <p>Controller to handle book related operations
+ */
 @RestController
 @RequestMapping(BookWorldConstants.BOOKS)
 @SuppressWarnings({"all"})
@@ -27,33 +31,33 @@ public class BookHandler {
   private static final Logger logger = LoggerFactory.getLogger(BookHandler.class);
   @Autowired private BookService bookService;
 
-  @GetMapping("/googlebooks/{id}")
-  public APIResponse getBooksFromGoogle(@PathVariable("id") String id) {
+  @GetMapping("/googlebooks/{bookname}")
+  public APIResponse getBooksFromGoogle(@PathVariable("bookname") String bookname) {
     APIResponse response = null;
     try {
-      response = bookService.getBooksFromGoogle(id);
+      response = bookService.getBooksFromGoogle(bookname);
     } catch (Exception e) {
       e.printStackTrace();
     }
     return response;
   }
 
-  @GetMapping("/defaultbooks/{id}")
-  public APIResponse getBook(@PathVariable("id") String id) throws Exception {
+  @GetMapping("/getbook/{bookid}")
+  public APIResponse getBook(@PathVariable("bookid") String bookId) {
     APIResponse response = null;
     try {
-      response = bookService.getBook(id);
+      response = bookService.getBook(bookId);
     } catch (Exception e) {
       e.printStackTrace();
     }
     return response;
   }
 
-  @GetMapping("/defaultbooks")
-  public APIResponse getDefaultBooks() {
+  @GetMapping("/all")
+  public APIResponse getAllBooks() {
     APIResponse response = null;
     try {
-      response = bookService.getDefaultBooks();
+      response = bookService.getAllBooks();
     } catch (Exception e) {
       e.printStackTrace();
     }

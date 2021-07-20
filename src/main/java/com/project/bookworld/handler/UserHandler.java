@@ -19,6 +19,10 @@ import com.project.bookworld.dto.PlaceOrder;
 import com.project.bookworld.dto.UserRequestResponse;
 import com.project.bookworld.service.UserService;
 
+/**
+ * @author Harish Vemula
+ *     <p>Controller to handle user related operations
+ */
 @RestController
 @RequestMapping(BookWorldConstants.USERS)
 @SuppressWarnings({"all"})
@@ -31,7 +35,7 @@ public class UserHandler {
   public APIResponse getUsers() {
     APIResponse response = null;
     try {
-      response = userService.getUsersFromDatabase();
+      response = userService.getAllUsers();
     } catch (Exception e) {
       logger.error("Exception in /all route");
       e.printStackTrace();

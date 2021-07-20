@@ -10,11 +10,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
-import com.project.bookworld.BookWorldConstants;
 import com.project.bookworld.dto.GoogleAPIResponse;
 import com.project.bookworld.dto.Items;
 import com.project.bookworld.entities.Book;
 import com.project.bookworld.security.WebSecurityConfiguration;
+import com.project.bookworld.service.BookService;
 
 @SuppressWarnings({"all"})
 @Component
@@ -34,7 +34,7 @@ public class BookUtils {
               .getItems()
               .parallelStream()
               .filter(
-                  book -> BookWorldConstants.DEFAULT_BOOKS.contains(book.getId()) ? false : true)
+                  book -> BookService.mapOfExistingBooks.containsKey(book.getId()) ? false : true)
               .map(item -> convertToBook(item))
               .collect(Collectors.toList());
     } catch (Exception e) {

@@ -34,17 +34,19 @@ public class WebSecurityConfiguration extends WebSecurityConfigurerAdapter {
   @Override
   public void configure(HttpSecurity http) {
     try {
-      //      http.csrf().disable().authorizeRequests().anyRequest().permitAll();
       http.cors()
           .and()
           .csrf()
           .disable()
           .authorizeRequests()
-          .antMatchers("/books/**")
+          .mvcMatchers(
+              "/books/googlebooks/*",
+              "/books/reviews/*",
+              "/books/all",
+              "/books/getbook/*",
+              "/books/ping")
           .permitAll()
-          .antMatchers("/users/**")
-          .permitAll()
-          .antMatchers("/users/**")
+          .antMatchers("/users/login", "/users/signup", "/users/ping")
           .permitAll()
           .antMatchers("/jwt/**")
           .permitAll()
