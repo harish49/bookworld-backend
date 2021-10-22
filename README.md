@@ -7,3 +7,5 @@ search experience.
 # Front-end code
 
 https://github.com/harish49/bookworld-frontend
+
+Copyright © 2021 Harish Vemula.
